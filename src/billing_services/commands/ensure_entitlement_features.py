@@ -12,6 +12,7 @@ Example usage:
 """
 
 import argparse
+import asyncio
 import sys
 from typing import List, Optional
 
@@ -23,7 +24,7 @@ from billing_services.clients.metering.openmeter_metering_client import OpenMete
 logger = logutils.get_logger(__name__)
 
 
-def feature_exists(feature_key: str) -> bool:
+async def feature_exists(feature_key: str) -> bool:
     """
     Check if a feature exists in the system.
 
@@ -35,11 +36,10 @@ def feature_exists(feature_key: str) -> bool:
     """
     try:
         # Create the metering client
-        metering_sync_client, metering_async_client = OpenMeterMeteringClient.create_clients()
-        metering_client = OpenMeterMeteringClient(metering_sync_client, metering_async_client)
+        metering_client = OpenMeterMeteringClient.from_default()
 
         # List all features and check if the feature_key exists
-        features = metering_client.list_features()
+        features = await metering_client.list_features()
 
         # Check if the feature_key is in the list of features
         return feature_key in features
@@ -48,7 +48,7 @@ def feature_exists(feature_key: str) -> bool:
         raise ExternalServiceException(f"Failed to check feature existence for {feature_key}: {e}")
 
 
-def create_feature(feature_key: str) -> None:
+async def create_feature(feature_key: str) -> None:
     """
     Create a feature in the system.
 
@@ -57,18 +57,17 @@ def create_feature(feature_key: str) -> None:
     """
     try:
         # Create the metering client
-        metering_sync_client, metering_async_client = OpenMeterMeteringClient.create_clients()
-        metering_client = OpenMeterMeteringClient(metering_sync_client, metering_async_client)
+        metering_client = OpenMeterMeteringClient.from_default()
 
         # Create the feature using the OpenMeterMeteringClient
-        metering_client.create_feature(feature_key)
+        await metering_client.create_feature(feature_key)
         logger.info(f"Created feature {feature_key}")
     except Exception as e:
         logger.error(f"Error creating feature {feature_key}: {e}")
         raise
 
 
-def ensure_features(feature_keys: Optional[List[str]] = None) -> None:
+async def ensure_features(feature_keys: Optional[List[str]] = None) -> None:
     """
     Ensure that the specified features exist in the system.
 
@@ -91,9 +90,9 @@ def ensure_features(feature_keys: Optional[List[str]] = None) -> None:
     # Ensure each feature exists
     for feature_key in feature_keys:
         try:
-            if not feature_exists(feature_key):
+            if not await feature_exists(feature_key):
                 logger.info(f"Feature {feature_key} does not exist, creating it...")
-                create_feature(feature_key)
+                await create_feature(feature_key)
             else:
                 logger.info(f"Feature {feature_key} already exists")
         except Exception as e:

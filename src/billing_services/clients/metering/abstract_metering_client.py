@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
+from billing_services.models.entitlement import Entitlement
 from billing_services.models.subject import Subject
 from billing_services.models.usage import TokenQuotaResponse, UsageEvent
 
@@ -12,7 +13,7 @@ class AbstractMeteringClient(ABC):
     """
 
     @abstractmethod
-    def record_usage(self, subject_id: str, usage_event: UsageEvent) -> bool:
+    async def record_usage(self, subject_id: str, usage_event: UsageEvent) -> bool:
         """
         Record usage for a subject.
 
@@ -26,7 +27,7 @@ class AbstractMeteringClient(ABC):
         pass
 
     @abstractmethod
-    def get_usage(self, subject_id: str) -> TokenQuotaResponse:
+    async def get_usage(self, subject_id: str) -> TokenQuotaResponse:
         """
         Get usage for a subject.
 
@@ -39,7 +40,7 @@ class AbstractMeteringClient(ABC):
         pass
 
     @abstractmethod
-    def upsert_subject(self, subjects: List[Dict[str, Any]]) -> None:
+    async def upsert_subject(self, subjects: List[Dict[str, Any]]) -> None:
         """
         Create or update subjects.
 
@@ -49,7 +50,7 @@ class AbstractMeteringClient(ABC):
         pass
 
     @abstractmethod
-    def delete_subject(self, subject_id: str) -> None:
+    async def delete_subject(self, subject_id: str) -> None:
         """
         Delete a subject.
 
@@ -59,7 +60,7 @@ class AbstractMeteringClient(ABC):
         pass
 
     @abstractmethod
-    def list_subjects(self) -> List[Subject]:
+    async def list_subjects(self) -> List[Subject]:
         """
         List all subjects.
 
@@ -69,7 +70,7 @@ class AbstractMeteringClient(ABC):
         pass
 
     @abstractmethod
-    def ingest_events(self, events: Dict[str, Any]) -> bool:
+    async def ingest_events(self, events: Dict[str, Any]) -> bool:
         """
         Ingest events into the metering system.
 
@@ -82,7 +83,20 @@ class AbstractMeteringClient(ABC):
         pass
 
     @abstractmethod
-    def list_features(self) -> List[str]:
+    async def list_entitlements(self, subject: Optional[List[str]] = None) -> List[Entitlement]:
+        """
+        List entitlements, optionally filtered by subject.
+
+        Args:
+            subject: Optional list of subject IDs to filter by.
+
+        Returns:
+            A list of Entitlement objects.
+        """
+        pass
+
+    @abstractmethod
+    async def list_features(self) -> List[str]:
         """
         List all features available in the metering system.
 
@@ -92,7 +106,7 @@ class AbstractMeteringClient(ABC):
         pass
 
     @abstractmethod
-    def create_feature(self, feature_key: str) -> None:
+    async def create_feature(self, feature_key: str) -> None:
         """
         Create a new feature in the metering system.
 
@@ -102,7 +116,7 @@ class AbstractMeteringClient(ABC):
         pass
 
     @abstractmethod
-    def create_meter(self) -> bool:
+    async def create_meter(self) -> bool:
         """
         Create a meter in the metering system with the configured settings.
 

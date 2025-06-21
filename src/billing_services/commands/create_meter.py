@@ -9,6 +9,7 @@ Example usage:
 """
 
 import argparse
+import asyncio
 import sys
 
 from billing_services.core.config import settings
@@ -19,7 +20,7 @@ from billing_services.clients.metering.openmeter_metering_client import OpenMete
 logger = logutils.get_logger(__name__)
 
 
-def create_meter() -> bool:
+async def create_meter() -> bool:
     """
     Create a meter in OpenMeter with the configured settings.
 
@@ -28,11 +29,10 @@ def create_meter() -> bool:
     """
     try:
         # Create the metering client
-        metering_sync_client, metering_async_client = OpenMeterMeteringClient.create_clients()
-        metering_client = OpenMeterMeteringClient(metering_sync_client, metering_async_client)
+        metering_client = OpenMeterMeteringClient.from_default()
 
         # Create the meter
-        result = metering_client.create_meter()
+        result = await metering_client.create_meter()
 
         if result:
             logger.info(f"Successfully created meter {settings.OPENMETER.METER_SLUG}")
@@ -56,7 +56,7 @@ def main() -> None:
         logutils.setup.setup_logging()
 
         # Create the meter
-        success = create_meter()
+        success = asyncio.run(create_meter())
 
         if not success:
             sys.exit(1)

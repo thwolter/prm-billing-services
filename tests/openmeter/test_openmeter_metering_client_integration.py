@@ -43,14 +43,14 @@ def test_openmeter_client_from_default():
         client = OpenMeterMeteringClient.from_default()
         assert client is not None
         assert isinstance(client, OpenMeterMeteringClient)
-        assert client.sync_client is not None
-        assert client.async_client is not None
+        assert client.client is not None
     except Exception as exc:
         pytest.fail(f'OpenMeter client from_default initialization failed: {exc}')
 
 
 @pytest.mark.integration
-def test_openmeter_client_record_usage():
+@pytest.mark.asyncio
+async def test_openmeter_client_record_usage():
     """
     Integration test to verify that the OpenMeter client can record usage.
 
@@ -65,23 +65,24 @@ def test_openmeter_client_record_usage():
         # Create a subject
         subject_id = str(uuid.uuid4())
         subject_email = f'test-{subject_id}@example.com'
-        client.upsert_subject([{'key': subject_id, 'displayName': subject_email}])
+        await client.upsert_subject([{'key': subject_id, 'displayName': subject_email}])
 
         # Record usage
         usage_event = UsageEvent(tokens=100, model='test-model', prompt='test-prompt')
-        result = client.record_usage(subject_id, usage_event)
+        result = await client.record_usage(subject_id, usage_event)
 
         # Verify the usage was recorded successfully
         assert result is True
 
         # Clean up
-        client.delete_subject(subject_id)
+        await client.delete_subject(subject_id)
     except Exception as exc:
         pytest.fail(f'OpenMeter client record_usage test failed: {exc}')
 
 
 @pytest.mark.integration
-def test_openmeter_client_ingest_events():
+@pytest.mark.asyncio
+async def test_openmeter_client_ingest_events():
     """
     Integration test to verify that the OpenMeter client can ingest events.
 
@@ -96,7 +97,7 @@ def test_openmeter_client_ingest_events():
         # Create a subject
         subject_id = str(uuid.uuid4())
         subject_email = f'test-{subject_id}@example.com'
-        client.upsert_subject([{'key': subject_id, 'displayName': subject_email}])
+        await client.upsert_subject([{'key': subject_id, 'displayName': subject_email}])
 
         # Create a cloud event
         event = CloudEvent(
@@ -110,19 +111,20 @@ def test_openmeter_client_ingest_events():
         )
 
         # Ingest the event
-        result = client.ingest_events(to_dict(event))
+        result = await client.ingest_events(to_dict(event))
 
         # Verify the event was ingested successfully
         assert result is True
 
         # Clean up
-        client.delete_subject(subject_id)
+        await client.delete_subject(subject_id)
     except Exception as exc:
         pytest.fail(f'OpenMeter client ingest_events test failed: {exc}')
 
 
 @pytest.mark.integration
-def test_openmeter_client_upsert_and_list_subjects():
+@pytest.mark.asyncio
+async def test_openmeter_client_upsert_and_list_subjects():
     """
     Integration test to verify that the OpenMeter client can upsert and list subjects.
 
@@ -140,7 +142,7 @@ def test_openmeter_client_upsert_and_list_subjects():
         subject2_id = str(uuid.uuid4())
         subject2_email = f'test-{subject2_id}@example.com'
 
-        client.upsert_subject(
+        await client.upsert_subject(
             [
                 {'key': subject1_id, 'displayName': subject1_email},
                 {'key': subject2_id, 'displayName': subject2_email},
@@ -148,7 +150,7 @@ def test_openmeter_client_upsert_and_list_subjects():
         )
 
         # List subjects
-        subjects = client.list_subjects()
+        subjects = await client.list_subjects()
 
         # Verify the subjects were created and listed correctly
         assert subjects is not None
@@ -170,19 +172,19 @@ def test_openmeter_client_upsert_and_list_subjects():
         assert subject2_found, f'Subject {subject2_id} not found in the list'
 
         # Clean up
-        client.delete_subject(subject1_id)
-        client.delete_subject(subject2_id)
+        await client.delete_subject(subject1_id)
+        await client.delete_subject(subject2_id)
     except Exception as exc:
         pytest.fail(f'OpenMeter client upsert_and_list_subjects test failed: {exc}')
 
 
 @pytest.mark.integration
 @pytest.mark.asyncio
-async def test_openmeter_client_upsert_subject_async():
+async def test_openmeter_client_upsert_subject():
     """
-    Integration test to verify that the OpenMeter client can upsert subjects asynchronously.
+    Integration test to verify that the OpenMeter client can upsert subjects.
 
-    This test initializes the OpenMeter client, creates a subject asynchronously, 
+    This test initializes the OpenMeter client, creates a subject, 
     and verifies that the subject was created correctly.
     """
 
@@ -190,24 +192,25 @@ async def test_openmeter_client_upsert_subject_async():
         # Initialize the client
         client = OpenMeterMeteringClient.from_default()
 
-        # Create a subject asynchronously
+        # Create a subject
         subject_id = str(uuid.uuid4())
         subject_email = f'test-{subject_id}@example.com'
-        await client.upsert_subject_async([{'key': subject_id, 'displayName': subject_email}])
+        await client.upsert_subject([{'key': subject_id, 'displayName': subject_email}])
 
         # List subjects to verify the subject was created
-        subjects = client.list_subjects()
+        subjects = await client.list_subjects()
         subject_found = any(str(subject.id) == subject_id for subject in subjects)
-        assert subject_found, f'Subject {subject_id} not found after async upsert'
+        assert subject_found, f'Subject {subject_id} not found after upsert'
 
         # Clean up
-        client.delete_subject(subject_id)
+        await client.delete_subject(subject_id)
     except Exception as exc:
-        pytest.fail(f'OpenMeter client upsert_subject_async test failed: {exc}')
+        pytest.fail(f'OpenMeter client upsert_subject test failed: {exc}')
 
 
 @pytest.mark.integration
-def test_openmeter_client_delete_subject():
+@pytest.mark.asyncio
+async def test_openmeter_client_delete_subject():
     """
     Integration test to verify that the OpenMeter client can delete subjects.
 
@@ -222,61 +225,29 @@ def test_openmeter_client_delete_subject():
         # Create a subject
         subject_id = str(uuid.uuid4())
         subject_email = f'test-{subject_id}@example.com'
-        client.upsert_subject([{'key': subject_id, 'displayName': subject_email}])
+        await client.upsert_subject([{'key': subject_id, 'displayName': subject_email}])
 
         # List subjects to verify the subject was created
-        subjects_before = client.list_subjects()
+        subjects_before = await client.list_subjects()
         subject_found_before = any(str(subject.id) == subject_id for subject in subjects_before)
         assert subject_found_before, f'Subject {subject_id} not found before deletion'
 
         # Delete the subject
-        client.delete_subject(subject_id)
+        await client.delete_subject(subject_id)
 
         # List subjects to verify the subject was deleted
-        subjects_after = client.list_subjects()
+        subjects_after = await client.list_subjects()
         subject_found_after = any(str(subject.id) == subject_id for subject in subjects_after)
         assert not subject_found_after, f'Subject {subject_id} still found after deletion'
     except Exception as exc:
         pytest.fail(f'OpenMeter client delete_subject test failed: {exc}')
 
 
+
+
 @pytest.mark.integration
 @pytest.mark.asyncio
-async def test_openmeter_client_delete_subject_async():
-    """
-    Integration test to verify that the OpenMeter client can delete subjects asynchronously.
-
-    This test initializes the OpenMeter client, creates a subject,
-    deletes it asynchronously, and verifies that the subject was deleted correctly.
-    """
-
-    try:
-        # Initialize the client
-        client = OpenMeterMeteringClient.from_default()
-
-        # Create a subject
-        subject_id = str(uuid.uuid4())
-        subject_email = f'test-{subject_id}@example.com'
-        client.upsert_subject([{'key': subject_id, 'displayName': subject_email}])
-
-        # List subjects to verify the subject was created
-        subjects_before = client.list_subjects()
-        subject_found_before = any(str(subject.id) == subject_id for subject in subjects_before)
-        assert subject_found_before, f'Subject {subject_id} not found before async deletion'
-
-        # Delete the subject asynchronously
-        await client.delete_subject_async(subject_id)
-
-        # List subjects to verify the subject was deleted
-        subjects_after = client.list_subjects()
-        subject_found_after = any(str(subject.id) == subject_id for subject in subjects_after)
-        assert not subject_found_after, f'Subject {subject_id} still found after async deletion'
-    except Exception as exc:
-        pytest.fail(f'OpenMeter client delete_subject_async test failed: {exc}')
-
-
-@pytest.mark.integration
-def test_openmeter_client_list_entitlements():
+async def test_openmeter_client_list_entitlements():
     """
     Integration test to verify that the OpenMeter client can list entitlements.
 
@@ -288,7 +259,7 @@ def test_openmeter_client_list_entitlements():
         client = OpenMeterMeteringClient.from_default()
 
         # List entitlements
-        entitlements = client.list_entitlements()
+        entitlements = await client.list_entitlements()
 
         # Verify the entitlements were listed correctly
         assert entitlements is not None
@@ -298,7 +269,8 @@ def test_openmeter_client_list_entitlements():
 
 
 @pytest.mark.integration
-def test_openmeter_client_list_features():
+@pytest.mark.asyncio
+async def test_openmeter_client_list_features():
     """
     Integration test to verify that the OpenMeter client can list features.
 
@@ -310,7 +282,7 @@ def test_openmeter_client_list_features():
         client = OpenMeterMeteringClient.from_default()
 
         # List features
-        features = client.list_features()
+        features = await client.list_features()
 
         # Verify the features were listed correctly
         assert features is not None
@@ -320,7 +292,8 @@ def test_openmeter_client_list_features():
 
 
 @pytest.mark.integration
-def test_openmeter_client_create_feature():
+@pytest.mark.asyncio
+async def test_openmeter_client_create_feature():
     """
     Integration test to verify that the OpenMeter client can create features.
 
@@ -335,21 +308,22 @@ def test_openmeter_client_create_feature():
         feature_key = f'test-feature-{uuid.uuid4()}'
 
         # Create the feature
-        client.create_feature(feature_key)
+        await client.create_feature(feature_key)
 
         # List features to verify the feature was created
-        features = client.list_features()
+        features = await client.list_features()
         feature_found = feature_key in features
         assert feature_found, f'Feature {feature_key} not found after creation'
 
         # Test creating the same feature again (should not raise an exception)
-        client.create_feature(feature_key)
+        await client.create_feature(feature_key)
     except Exception as exc:
         pytest.fail(f'OpenMeter client create_feature test failed: {exc}')
 
 
 @pytest.mark.integration
-def test_openmeter_client_create_meter():
+@pytest.mark.asyncio
+async def test_openmeter_client_create_meter():
     """
     Integration test to verify that the OpenMeter client can create meters.
 
@@ -361,13 +335,13 @@ def test_openmeter_client_create_meter():
     client = OpenMeterMeteringClient.from_default()
 
     try:
-        client.sync_client.delete_meter(settings.OPENMETER.METER_SLUG)
+        await client.client.delete_meter(settings.OPENMETER.METER_SLUG)
     except Exception as exc:
         pytest.fail(f'OpenMeter client delete_meter test failed: {exc}')
 
     try:
         # Create the meter
-        result = client.create_meter()
+        result = await client.create_meter()
 
         # Verify the meter was created successfully
         assert result is True
@@ -376,7 +350,8 @@ def test_openmeter_client_create_meter():
 
 
 @pytest.mark.integration
-def test_openmeter_client_get_usage():
+@pytest.mark.asyncio
+async def test_openmeter_client_get_usage():
     """
     Integration test to verify that the OpenMeter client can get usage.
 
@@ -386,20 +361,19 @@ def test_openmeter_client_get_usage():
 
     try:
         # Initialize the client
-        sync_client, async_client = OpenMeterMeteringClient.create_clients()
-        client = OpenMeterMeteringClient(sync_client, async_client)
+        client = OpenMeterMeteringClient.from_default()
 
         # Create a subject
         subject_id = str(uuid.uuid4())
         subject_email = f'test-{subject_id}@example.com'
-        client.upsert_subject([{'key': subject_id, 'displayName': subject_email}])
+        await client.upsert_subject([{'key': subject_id, 'displayName': subject_email}])
 
         # Record usage
         usage_event = UsageEvent(tokens=100, model='test-model', prompt='test-prompt')
-        client.record_usage(subject_id, usage_event)
+        await client.record_usage(subject_id, usage_event)
 
         # Get usage
-        usage = client.get_usage(subject_id)
+        usage = await client.get_usage(subject_id)
 
         # Verify the usage was retrieved correctly
         assert usage is not None
@@ -409,6 +383,6 @@ def test_openmeter_client_get_usage():
         assert hasattr(usage, 'remaining_tokens')
 
         # Clean up
-        client.delete_subject(subject_id)
+        await client.delete_subject(subject_id)
     except Exception as exc:
         pytest.fail(f'OpenMeter client get_usage test failed: {exc}')
