@@ -3,10 +3,10 @@ from typing import List, Optional, Tuple
 from openmeter import Client
 from openmeter.aio import Client as AsyncClient
 
-from src.core.config import settings
-from src.domain.models.entitlement import Entitlement
-from src.external.entitlements.abstract_entitlement_client import AbstractEntitlementClient
-from src.utils import logutils
+from billing_services.core.config import settings
+from billing_services.models.entitlement import Entitlement
+from billing_services.clients.entitlements.abstract_entitlement_client import AbstractEntitlementClient
+from billing_services.utils import logutils
 
 logger = logutils.get_logger(__name__)
 
@@ -37,7 +37,7 @@ class OpenMeterEntitlementClient(AbstractEntitlementClient):
         """
         headers = {
             'Accept': 'application/json',
-            'Authorization': f'Bearer {settings.OPENMETER_API_KEY}',
+            'Authorization': f'Bearer {settings.OPENMETER_API_KEY}'
         }
 
         sync_client = Client(
@@ -51,6 +51,17 @@ class OpenMeterEntitlementClient(AbstractEntitlementClient):
         )
 
         return sync_client, async_client
+
+    @classmethod
+    def from_default(cls) -> 'OpenMeterEntitlementClient':
+        """
+        Create an OpenMeterEntitlementClient using default settings.
+
+        Returns:
+            An instance of OpenMeterEntitlementClient.
+        """
+        sync_client, async_client = cls.create_clients()
+        return cls(sync_client, async_client)
 
     def create_entitlement(self, subject_id: str, entitlement: Entitlement) -> None:
         """

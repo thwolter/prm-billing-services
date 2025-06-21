@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from typing import List, Optional
 from uuid import UUID
 
-from src.domain.models.payment import Payment, PaymentEvent
+from billing_services.models.payment import Payment, PaymentEvent
 
 
 class AbstractPaymentClient(ABC):

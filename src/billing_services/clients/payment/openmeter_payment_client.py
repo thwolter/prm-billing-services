@@ -7,10 +7,10 @@ from cloudevents.http import CloudEvent
 from openmeter import Client
 from openmeter.aio import Client as AsyncClient
 
-from src.core.config import settings
-from src.domain.models.payment import Payment, PaymentEvent
-from src.external.payment.abstract_payment_client import AbstractPaymentClient
-from src.utils import logutils
+from billing_services.core.config import settings
+from billing_services.models.payment import Payment, PaymentEvent
+from billing_services.clients.payment.abstract_payment_client import AbstractPaymentClient
+from billing_services.utils import logutils
 
 logger = logutils.get_logger(__name__)
 

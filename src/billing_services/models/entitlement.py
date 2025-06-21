@@ -41,11 +41,17 @@ class Entitlement(BaseModel):
 
     def to_dict(self) -> dict:
         """
-        Convert the entitlement to a dictionary format suitable for external APIs.
+        Convert the entitlement to a dictionary format suitable for.clients.APIs.
         """
-        return {
+        result = {
             'type': 'metered',
             'featureKey': self.feature_key,
-            'issueAfterReset': self.limit,
-            'usagePeriod': {'interval': self.period} if self.period else None,
         }
+
+        if self.limit is not None:
+            result['issueAfterReset'] = self.limit
+
+        if self.period:
+            result['usagePeriod'] = {'interval': self.period}
+
+        return result

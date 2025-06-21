@@ -1,20 +1,22 @@
 from typing import Any, Dict, List, Optional, Tuple
 from uuid import UUID
 
+from azure.core.exceptions import HttpResponseError
 from openmeter import Client
 from openmeter.aio import Client as AsyncClient
 
-from src.core.config import settings
-from src.domain.models.entitlement import Entitlement
-from src.domain.models.subject import Subject
-from src.domain.models.usage import TokenQuotaResponse, UsageEvent
-from src.external.metering.abstract_metering_client import AbstractMeteringClient
-from src.utils import logutils
+from billing_services.core.config import settings
+from billing_services.models.entitlement import Entitlement
+from billing_services.models.subject import Subject
+from billing_services.models.usage import TokenQuotaResponse, UsageEvent
+from billing_services.clients.metering.abstract_metering_client import AbstractMeteringClient
+from billing_services.utils import logutils
+from billing_services.utils.exceptions import ExternalServiceException
 
 logger = logutils.get_logger(__name__)
 
 
-class OpenMeterClient(AbstractMeteringClient):
+class OpenMeterMeteringClient(AbstractMeteringClient):
     """
     OpenMeter implementation of the AbstractMeteringClient.
     """
@@ -40,7 +42,7 @@ class OpenMeterClient(AbstractMeteringClient):
         """
         headers = {
             'Accept': 'application/json',
-            'Authorization': f'Bearer {settings.OPENMETER_API_KEY}',
+            'Authorization': f'Bearer {settings.OPENMETER_API_KEY}'
         }
 
         sync_client = Client(
@@ -54,6 +56,17 @@ class OpenMeterClient(AbstractMeteringClient):
         )
 
         return sync_client, async_client
+
+    @classmethod
+    def from_default(cls) -> 'OpenMeterMeteringClient':
+        """
+        Create an instance of OpenMeterMeteringClient using default settings.
+
+        Returns:
+            An instance of OpenMeterMeteringClient.
+        """
+        sync_client, async_client = cls.create_clients()
+        return cls(sync_client, async_client)
 
     def record_usage(self, subject_id: str, usage_event: UsageEvent) -> bool:
         """
@@ -77,7 +90,7 @@ class OpenMeterClient(AbstractMeteringClient):
             event = CloudEvent(
                 attributes={
                     'id': str(uuid.uuid4()),
-                    'type': settings.OPENMETER_EVENT_TYPE,
+                    'type': settings.OPENMETER_TOKEN_EVENT_TYPE,
                     'source': settings.OPENMETER_SOURCE,
                     'subject': subject_id,
                 },
@@ -140,6 +153,15 @@ class OpenMeterClient(AbstractMeteringClient):
         """
         self.sync_client.upsert_subject(subjects)
 
+    async def upsert_subject_async(self, subjects: List[Dict[str, Any]]) -> None:
+        """
+        Create or update subjects using OpenMeter asynchronously.
+
+        Args:
+            subjects: List of subject data to create or update.
+        """
+        await self.async_client.upsert_subject(subjects)
+
     def delete_subject(self, subject_id: str) -> None:
         """
         Delete a subject using OpenMeter.
@@ -148,6 +170,15 @@ class OpenMeterClient(AbstractMeteringClient):
             subject_id: The ID of the subject to delete.
         """
         self.sync_client.delete_subject(subject_id)
+
+    async def delete_subject_async(self, subject_id: str) -> None:
+        """
+        Delete a subject using OpenMeter asynchronously.
+
+        Args:
+            subject_id: The ID of the subject to delete.
+        """
+        await self.async_client.delete_subject(subject_id)
 
     def list_subjects(self) -> List[Subject]:
         """
@@ -215,3 +246,71 @@ class OpenMeterClient(AbstractMeteringClient):
         except Exception as e:
             logger.error(f'Error listing entitlements: {e}')
             return []
+
+    def list_features(self) -> List[str]:
+        """
+        List all features available in OpenMeter.
+
+        Returns:
+            A list of feature keys.
+        """
+        try:
+            response = self.sync_client.list_features()
+            return [item['key'] for item in response['items']]
+        except Exception as e:
+            logger.error(f'Error listing features: {e}')
+            raise ExternalServiceException(f'Failed to list features from OpenMeter: {e}')
+
+    def create_feature(self, feature_key: str) -> None:
+        """
+        Create a new feature in OpenMeter.
+
+        Args:
+            feature_key: The key of the feature to create.
+        """
+        try:
+            # Create a properly formatted object with the feature key and name
+            feature_data = {
+                "key": feature_key,
+                "name": feature_key  # Using the feature_key as the name as well
+            }
+            self.sync_client.create_feature(feature_data)
+            logger.info(f'Feature {feature_key} created successfully.')
+        except Exception as e:
+            # Check if the error is a "Conflict" error (409), which means the feature already exists
+            if "Conflict" in str(e) and "already exists" in str(e):
+                logger.info(f'Feature {feature_key} already exists, skipping creation.')
+                return  # Return without raising the exception
+            logger.error(f'Error creating feature {feature_key}: {e}')
+            raise
+
+    def create_meter(self) -> bool:
+        """
+        Create a meter in OpenMeter with the configured settings.
+
+        Returns:
+            True if the meter was successfully created, False otherwise.
+        """
+        try:
+            # Create the meter configuration using the settings
+            meter_config = {
+                "slug": settings.OPENMETER_METER_SLUG,
+                "description": settings.OPENMETER_METER_DESCRIPTION,
+                "eventType": settings.OPENMETER_METER_EVENT_TYPE,
+                "aggregation": settings.OPENMETER_METER_AGGREGATION,
+                "valueProperty": f'$.{settings.OPENMETER_METER_VALUE_PROPERTY}',
+                "groupBy": {key: f'$.{key}' for key in settings.OPENMETER_METER_GROUP_BY},
+                "windowSize": settings.OPENMETER_METER_WINDOW_SIZE
+            }
+
+            # Call the create_meter method of the OpenMeter client
+            self.sync_client.create_meter(meter_config)
+            logger.info(f'Meter {settings.OPENMETER_METER_SLUG} created successfully.')
+            return True
+        except HttpResponseError as e:
+            if e.status_code == 200:
+                logger.info(f'Meter {settings.OPENMETER_METER_SLUG} has been created.')
+                return True
+        except Exception as e:
+            logger.error(f'Error creating meter: {e}')
+            return False

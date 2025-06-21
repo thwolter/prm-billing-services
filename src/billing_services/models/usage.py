@@ -38,7 +38,7 @@ class UsageEvent(BaseModel):
 
     def to_dict(self) -> dict:
         """
-        Convert the usage event to a dictionary format suitable for external APIs.
+        Convert the usage event to a dictionary format suitable for.clients.APIs.
         """
         return {
             'tokens': self.tokens,

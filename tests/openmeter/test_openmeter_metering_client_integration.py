@@ -1,17 +1,18 @@
 """
-End-to-end tests for the OpenMeterClient.
+End-to-end tests for the OpenMeterMeteringClient.
 These tests interact with a real OpenMeter service and do not use mocks.
 """
 
+import asyncio
 import uuid
 
 import pytest
 from cloudevents.conversion import to_dict
 from cloudevents.http import CloudEvent
 
-from src.core.config import settings
-from src.domain.models.usage import UsageEvent
-from src.external.metering.openmeter_client import OpenMeterClient
+from billing_services.core.config import settings
+from billing_services.models.usage import UsageEvent
+from billing_services.clients.metering.openmeter_metering_client import OpenMeterMeteringClient
 
 
 @pytest.mark.integration
@@ -19,20 +20,33 @@ def test_openmeter_client_initialization():
     """
     Integration test to verify initialization of the OpenMeter client.
 
-    This test checks if the `OPENMETER_API_KEY` is provided. If the key is not present,
-    the test is skipped. Otherwise, it initializes the OpenMeter client and
-    verifies that it can be created without errors.
+    This test initializes the OpenMeter client and verifies that it can be created without errors.
     """
-    api_key = settings.OPENMETER_API_KEY
-    if not api_key:
-        pytest.skip('OPENMETER_API_KEY not provided')
 
     try:
-        sync_client, async_client = OpenMeterClient.create_clients()
-        client = OpenMeterClient(sync_client, async_client)
+        client = OpenMeterMeteringClient.from_default()
         assert client is not None
     except Exception as exc:
         pytest.fail(f'OpenMeter client initialization failed: {exc}')
+
+
+@pytest.mark.integration
+def test_openmeter_client_from_default():
+    """
+    Integration test to verify the from_default class method of the OpenMeter client.
+
+    This test initializes the OpenMeter client using the from_default method and 
+    verifies that it can be created without errors.
+    """
+
+    try:
+        client = OpenMeterMeteringClient.from_default()
+        assert client is not None
+        assert isinstance(client, OpenMeterMeteringClient)
+        assert client.sync_client is not None
+        assert client.async_client is not None
+    except Exception as exc:
+        pytest.fail(f'OpenMeter client from_default initialization failed: {exc}')
 
 
 @pytest.mark.integration
@@ -40,18 +54,13 @@ def test_openmeter_client_record_usage():
     """
     Integration test to verify that the OpenMeter client can record usage.
 
-    This test checks if the `OPENMETER_API_KEY` is provided. If the key is not present,
-    the test is skipped. Otherwise, it initializes the OpenMeter client, creates a subject,
+    This test initializes the OpenMeter client, creates a subject,
     records usage for the subject, and verifies that the usage was recorded successfully.
     """
-    api_key = settings.OPENMETER_API_KEY
-    if not api_key:
-        pytest.skip('OPENMETER_API_KEY not provided')
 
     try:
         # Initialize the client
-        sync_client, async_client = OpenMeterClient.create_clients()
-        client = OpenMeterClient(sync_client, async_client)
+        client = OpenMeterMeteringClient.from_default()
 
         # Create a subject
         subject_id = str(uuid.uuid4())
@@ -76,18 +85,13 @@ def test_openmeter_client_ingest_events():
     """
     Integration test to verify that the OpenMeter client can ingest events.
 
-    This test checks if the `OPENMETER_API_KEY` is provided. If the key is not present,
-    the test is skipped. Otherwise, it initializes the OpenMeter client, creates a subject,
+    This test initializes the OpenMeter client, creates a subject,
     ingests an event for the subject, and verifies that the event was ingested successfully.
     """
-    api_key = settings.OPENMETER_API_KEY
-    if not api_key:
-        pytest.skip('OPENMETER_API_KEY not provided')
 
     try:
         # Initialize the client
-        sync_client, async_client = OpenMeterClient.create_clients()
-        client = OpenMeterClient(sync_client, async_client)
+        client = OpenMeterMeteringClient.from_default()
 
         # Create a subject
         subject_id = str(uuid.uuid4())
@@ -98,7 +102,7 @@ def test_openmeter_client_ingest_events():
         event = CloudEvent(
             attributes={
                 'id': str(uuid.uuid4()),
-                'type': settings.OPENMETER_EVENT_TYPE,
+                'type': settings.OPENMETER_TOKEN_EVENT_TYPE,
                 'source': settings.OPENMETER_SOURCE,
                 'subject': subject_id,
             },
@@ -122,18 +126,13 @@ def test_openmeter_client_upsert_and_list_subjects():
     """
     Integration test to verify that the OpenMeter client can upsert and list subjects.
 
-    This test checks if the `OPENMETER_API_KEY` is provided. If the key is not present,
-    the test is skipped. Otherwise, it initializes the OpenMeter client, creates multiple
-    subjects, lists them, and verifies that the subjects were created and listed correctly.
+    This test initializes the OpenMeter client, creates multiple subjects, 
+    lists them, and verifies that the subjects were created and listed correctly.
     """
-    api_key = settings.OPENMETER_API_KEY
-    if not api_key:
-        pytest.skip('OPENMETER_API_KEY not provided')
 
     try:
         # Initialize the client
-        sync_client, async_client = OpenMeterClient.create_clients()
-        client = OpenMeterClient(sync_client, async_client)
+        client = OpenMeterMeteringClient.from_default()
 
         # Create subjects
         subject1_id = str(uuid.uuid4())
@@ -178,22 +177,47 @@ def test_openmeter_client_upsert_and_list_subjects():
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
+async def test_openmeter_client_upsert_subject_async():
+    """
+    Integration test to verify that the OpenMeter client can upsert subjects asynchronously.
+
+    This test initializes the OpenMeter client, creates a subject asynchronously, 
+    and verifies that the subject was created correctly.
+    """
+
+    try:
+        # Initialize the client
+        client = OpenMeterMeteringClient.from_default()
+
+        # Create a subject asynchronously
+        subject_id = str(uuid.uuid4())
+        subject_email = f'test-{subject_id}@example.com'
+        await client.upsert_subject_async([{'key': subject_id, 'displayName': subject_email}])
+
+        # List subjects to verify the subject was created
+        subjects = client.list_subjects()
+        subject_found = any(str(subject.id) == subject_id for subject in subjects)
+        assert subject_found, f'Subject {subject_id} not found after async upsert'
+
+        # Clean up
+        client.delete_subject(subject_id)
+    except Exception as exc:
+        pytest.fail(f'OpenMeter client upsert_subject_async test failed: {exc}')
+
+
+@pytest.mark.integration
 def test_openmeter_client_delete_subject():
     """
     Integration test to verify that the OpenMeter client can delete subjects.
 
-    This test checks if the `OPENMETER_API_KEY` is provided. If the key is not present,
-    the test is skipped. Otherwise, it initializes the OpenMeter client, creates a subject,
+    This test initializes the OpenMeter client, creates a subject,
     deletes it, and verifies that the subject was deleted correctly.
     """
-    api_key = settings.OPENMETER_API_KEY
-    if not api_key:
-        pytest.skip('OPENMETER_API_KEY not provided')
 
     try:
         # Initialize the client
-        sync_client, async_client = OpenMeterClient.create_clients()
-        client = OpenMeterClient(sync_client, async_client)
+        client = OpenMeterMeteringClient.from_default()
 
         # Create a subject
         subject_id = str(uuid.uuid4())
@@ -217,21 +241,51 @@ def test_openmeter_client_delete_subject():
 
 
 @pytest.mark.integration
+@pytest.mark.asyncio
+async def test_openmeter_client_delete_subject_async():
+    """
+    Integration test to verify that the OpenMeter client can delete subjects asynchronously.
+
+    This test initializes the OpenMeter client, creates a subject,
+    deletes it asynchronously, and verifies that the subject was deleted correctly.
+    """
+
+    try:
+        # Initialize the client
+        client = OpenMeterMeteringClient.from_default()
+
+        # Create a subject
+        subject_id = str(uuid.uuid4())
+        subject_email = f'test-{subject_id}@example.com'
+        client.upsert_subject([{'key': subject_id, 'displayName': subject_email}])
+
+        # List subjects to verify the subject was created
+        subjects_before = client.list_subjects()
+        subject_found_before = any(str(subject.id) == subject_id for subject in subjects_before)
+        assert subject_found_before, f'Subject {subject_id} not found before async deletion'
+
+        # Delete the subject asynchronously
+        await client.delete_subject_async(subject_id)
+
+        # List subjects to verify the subject was deleted
+        subjects_after = client.list_subjects()
+        subject_found_after = any(str(subject.id) == subject_id for subject in subjects_after)
+        assert not subject_found_after, f'Subject {subject_id} still found after async deletion'
+    except Exception as exc:
+        pytest.fail(f'OpenMeter client delete_subject_async test failed: {exc}')
+
+
+@pytest.mark.integration
 def test_openmeter_client_list_entitlements():
     """
     Integration test to verify that the OpenMeter client can list entitlements.
 
-    This test checks if the `OPENMETER_API_KEY` is provided. If the key is not present,
-    the test is skipped. Otherwise, it initializes the OpenMeter client and lists entitlements.
+    This test initializes the OpenMeter client and lists entitlements.
     """
-    api_key = settings.OPENMETER_API_KEY
-    if not api_key:
-        pytest.skip('OPENMETER_API_KEY not provided')
 
     try:
         # Initialize the client
-        sync_client, async_client = OpenMeterClient.create_clients()
-        client = OpenMeterClient(sync_client, async_client)
+        client = OpenMeterMeteringClient.from_default()
 
         # List entitlements
         entitlements = client.list_entitlements()
@@ -244,22 +298,97 @@ def test_openmeter_client_list_entitlements():
 
 
 @pytest.mark.integration
+def test_openmeter_client_list_features():
+    """
+    Integration test to verify that the OpenMeter client can list features.
+
+    This test initializes the OpenMeter client and lists features.
+    """
+
+    try:
+        # Initialize the client
+        client = OpenMeterMeteringClient.from_default()
+
+        # List features
+        features = client.list_features()
+
+        # Verify the features were listed correctly
+        assert features is not None
+        assert isinstance(features, list)
+    except Exception as exc:
+        pytest.fail(f'OpenMeter client list_features test failed: {exc}')
+
+
+@pytest.mark.integration
+def test_openmeter_client_create_feature():
+    """
+    Integration test to verify that the OpenMeter client can create features.
+
+    This test initializes the OpenMeter client, creates a feature,
+    and verifies that the feature was created correctly.
+    """
+
+    try:
+        # Initialize the client
+        client = OpenMeterMeteringClient.from_default()
+
+        # Create a unique feature key
+        feature_key = f'test-feature-{uuid.uuid4()}'
+
+        # Create the feature
+        client.create_feature(feature_key)
+
+        # List features to verify the feature was created
+        features = client.list_features()
+        feature_found = feature_key in features
+        assert feature_found, f'Feature {feature_key} not found after creation'
+
+        # Test creating the same feature again (should not raise an exception)
+        client.create_feature(feature_key)
+    except Exception as exc:
+        pytest.fail(f'OpenMeter client create_feature test failed: {exc}')
+
+
+@pytest.mark.integration
+def test_openmeter_client_create_meter():
+    """
+    Integration test to verify that the OpenMeter client can create meters.
+
+    This test initializes the OpenMeter client, creates a meter,
+    and verifies that the meter was created correctly.
+    """
+
+    # Initialize the client
+    client = OpenMeterMeteringClient.from_default()
+
+    try:
+        client.sync_client.delete_meter(settings.OPENMETER_METER_SLUG)
+    except Exception as exc:
+        pytest.fail(f'OpenMeter client delete_meter test failed: {exc}')
+
+    try:
+        # Create the meter
+        result = client.create_meter()
+
+        # Verify the meter was created successfully
+        assert result is True
+    except Exception as exc:
+        pytest.fail(f'OpenMeter client create_meter test failed: {exc}')
+
+
+@pytest.mark.integration
 def test_openmeter_client_get_usage():
     """
     Integration test to verify that the OpenMeter client can get usage.
 
-    This test checks if the `OPENMETER_API_KEY` is provided. If the key is not present,
-    the test is skipped. Otherwise, it initializes the OpenMeter client, creates a subject,
+    This test initializes the OpenMeter client, creates a subject,
     records usage for the subject, gets the usage, and verifies that the usage was retrieved correctly.
     """
-    api_key = settings.OPENMETER_API_KEY
-    if not api_key:
-        pytest.skip('OPENMETER_API_KEY not provided')
 
     try:
         # Initialize the client
-        sync_client, async_client = OpenMeterClient.create_clients()
-        client = OpenMeterClient(sync_client, async_client)
+        sync_client, async_client = OpenMeterMeteringClient.create_clients()
+        client = OpenMeterMeteringClient(sync_client, async_client)
 
         # Create a subject
         subject_id = str(uuid.uuid4())

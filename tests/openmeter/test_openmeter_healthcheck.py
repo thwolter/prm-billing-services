@@ -1,7 +1,7 @@
 import pytest
 from openmeter import Client
 
-from src.core.config import settings
+from billing_services.core.config import settings
 
 
 @pytest.mark.integration

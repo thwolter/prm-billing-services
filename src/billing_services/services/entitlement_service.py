@@ -2,17 +2,16 @@
 EntitlementService: Manages entitlements.
 """
 
-from typing import Optional
 from uuid import UUID
 
 from azure.core.exceptions import ResourceNotFoundError
-from fastapi import Request
 
-from src.domain.models import Entitlement, EntitlementCreate
-from src.external.entitlements.abstract_entitlement_client import AbstractEntitlementClient
-from src.utils import logutils
-from src.utils.exceptions import ResourceNotFoundException
-from src.utils.resilient import with_resilient_execution
+from billing_services.models import Entitlement, EntitlementCreate
+from billing_services.clients.entitlements.abstract_entitlement_client import AbstractEntitlementClient
+from billing_services.core.config import settings
+from billing_services.utils import logutils
+from billing_services.utils.exceptions import ResourceNotFoundException
+from billing_services.utils.resilient import with_resilient_execution
 
 logger = logutils.get_logger(__name__)
 
@@ -25,31 +24,22 @@ class EntitlementService:
     def __init__(
         self,
         entitlement_client: AbstractEntitlementClient,
-        request: Optional[Request] = None,
-        user_id: Optional[UUID] = None,
     ):
         """
         Initialize the EntitlementService.
 
         Args:
             entitlement_client: The entitlement client.
-            request: Optional FastAPI request object.
-            user_id: Optional UUID of the user. If not provided and request is available, it will be extracted from request.state.
         """
         self.entitlement_client = entitlement_client
-        self.request = request
-
-        self.user_id = user_id
-
-        if request and not user_id:
-            self.user_id = request.state.user_id
 
     @with_resilient_execution(service_name='EntitlementService')
-    async def set_entitlement(self, limit: EntitlementCreate) -> None:
+    async def set_entitlement(self, subject_id: UUID, limit: EntitlementCreate) -> None:
         """
-        Set an entitlement for a user.
+        Set an entitlement for a subject.
 
         Args:
+            subject_id: The ID of the subject.
             limit: The entitlement details.
         """
 
@@ -60,79 +50,83 @@ class EntitlementService:
             period=limit.period,
         )
 
-        self.entitlement_client.create_entitlement(str(self.user_id), entitlement)
-
-    def set_entitlement_sync(self, limit: EntitlementCreate) -> None:
-        """
-        Synchronous version of set_entitlement.
-
-        Args:
-            limit: The entitlement details.
-        """
-        import asyncio
-
-        # Run the async method in a new event loop
-        try:
-            loop = asyncio.get_event_loop()
-        except RuntimeError:
-            # If no event loop exists in the current thread, create a new one
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-
-        return loop.run_until_complete(self.set_entitlement(limit))
+        self.entitlement_client.create_entitlement(str(subject_id), entitlement)
 
     @with_resilient_execution(service_name='EntitlementService')
-    async def get_token_entitlement_status(self, feature_key: str) -> bool:
+    async def get_token_entitlement_status(self, subject_id: UUID, feature_key: str) -> bool:
         """
-        Check if a user has access to a feature.
+        Check if a subject has access to a feature.
 
         Args:
+            subject_id: The ID of the subject.
             feature_key: The feature key to check.
 
         Returns:
-            True if the user has access, False otherwise.
+            True if the subject has access, False otherwise.
 
         Raises:
-            ResourceNotFoundException: If the user is not found.
+            ResourceNotFoundException: If the subject or feature is not found.
         """
 
         try:
             entitlement = self.entitlement_client.get_entitlement_value(
-                str(self.user_id), feature_key
+                str(subject_id), feature_key
             )
             return entitlement.has_access
         except ResourceNotFoundError as e:
-            logger.error(f'User {self.user_id}: {e}')
-            raise ResourceNotFoundException(detail='User not found')
+            logger.error(f'Subject {subject_id}, feature {feature_key}: {e}')
 
-    async def has_access(self, feature_key: str) -> bool:
+            # Check if this is the feature from settings
+            if feature_key == settings.OPENMETER_FEATURE_KEY:
+                error_msg = (
+                    f"Feature '{feature_key}' not found. "
+                    f"Run 'python -m billing_services.commands.ensure_entitlement_features' "
+                    f"to create the feature."
+                )
+                raise ResourceNotFoundException(detail=error_msg)
+            else:
+                raise ResourceNotFoundException(detail='Subject or feature not found')
+
+    async def has_access(self, subject_id: UUID, feature_key: str) -> bool:
         """
         Alias for get_token_entitlement_status for backward compatibility.
 
         Args:
+            subject_id: The ID of the subject.
             feature_key: The feature key to check.
 
         Returns:
-            True if the user has access, False otherwise.
+            True if the subject has access, False otherwise.
         """
-        return await self.get_token_entitlement_status(feature_key)
+        return await self.get_token_entitlement_status(subject_id, feature_key)
 
     @with_resilient_execution(service_name='EntitlementService')
-    async def get_entitlement_value(self, feature_key: str) -> Entitlement:
+    async def get_entitlement_value(self, subject_id: UUID, feature_key: str) -> Entitlement:
         """
-        Get the entitlement value for a user.
+        Get the entitlement value for a subject.
 
         Args:
+            subject_id: The ID of the subject.
             feature_key: The feature key to check.
 
         Returns:
             The entitlement value.
 
         Raises:
-            ResourceNotFoundException: If the user is not found.
+            ResourceNotFoundException: If the subject or feature is not found.
         """
         try:
-            return self.entitlement_client.get_entitlement_value(str(self.user_id), feature_key)
+            return self.entitlement_client.get_entitlement_value(str(subject_id), feature_key)
         except ResourceNotFoundError as e:
-            logger.error(f'User {self.user_id}: {e}')
-            raise ResourceNotFoundException(detail='User not found')
+            logger.error(f'Subject {subject_id}, feature {feature_key}: {e}')
+
+            # Check if this is the feature from settings
+            if feature_key == settings.OPENMETER_FEATURE_KEY:
+                error_msg = (
+                    f"Feature '{feature_key}' not found. "
+                    f"Run 'python -m billing_services.commands.ensure_entitlement_features' "
+                    f"to create the feature."
+                )
+                raise ResourceNotFoundException(detail=error_msg)
+            else:
+                raise ResourceNotFoundException(detail='Subject or feature not found')

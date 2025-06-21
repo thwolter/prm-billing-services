@@ -15,6 +15,6 @@ class Subject(BaseModel):
 
     def to_dict(self):
         """
-        Convert the subject to a dictionary format suitable for external APIs.
+        Convert the subject to a dictionary format suitable for.clients.APIs.
         """
         return {'key': str(self.id), 'displayName': self.email or self.display_name or str(self.id)}

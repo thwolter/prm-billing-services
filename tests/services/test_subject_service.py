@@ -8,10 +8,9 @@ from unittest.mock import Mock
 
 import pytest
 from azure.core.exceptions import ResourceNotFoundError
-from fastapi import Request
 
-from src.domain.services.subject_service import SubjectService
-from src.external.metering.abstract_metering_client import AbstractMeteringClient
+from billing_services.services.subject_service import SubjectService
+from billing_services.clients.metering.abstract_metering_client import AbstractMeteringClient
 
 
 class MockMeteringClient(AbstractMeteringClient):
@@ -102,28 +101,27 @@ async def test_create_subject():
 
 
 @pytest.mark.asyncio
-async def test_create_subject_with_request():
-    """Test that create_subject works correctly with request object."""
+async def test_create_subject_with_parameters():
+    """Test that create_subject works correctly with parameters."""
     # Create a mock metering client
     mock_client = MockMeteringClient()
 
-    # Create a mock request
-    mock_request = Request(scope={'type': 'http'})
-    mock_request.state.user_id = uuid.uuid4()
-    mock_request.state.user_email = 'test@example.com'
+    # Create test data
+    user_id = uuid.uuid4()
+    user_email = 'test@example.com'
 
-    # Create a subject service with the mock client and request
-    service = SubjectService(mock_client, request=mock_request)
+    # Create a subject service with the mock client
+    service = SubjectService(mock_client)
 
     # Create a subject
-    await service.create_subject()
+    await service.create_subject(subject_id=user_id, user_email=user_email)
 
     # Verify the mock was called with the correct arguments
     mock_client.upsert_subject_mock.assert_called_once()
     call_args = mock_client.upsert_subject_mock.call_args[0][0]
     assert len(call_args) == 1
-    assert call_args[0]['key'] == str(mock_request.state.user_id)
-    assert call_args[0]['displayName'] == mock_request.state.user_email
+    assert call_args[0]['key'] == str(user_id)
+    assert call_args[0]['displayName'] == user_email
 
 
 @pytest.mark.asyncio
@@ -173,7 +171,7 @@ async def test_delete_subject_not_found():
     service = SubjectService(mock_client)
 
     # Delete a subject that doesn't exist
-    from src.utils.exceptions import ExternalServiceException
+    from billing_services.utils.exceptions import ExternalServiceException
 
     with pytest.raises(ExternalServiceException):
         await service.delete_subject(user_id=user_id)

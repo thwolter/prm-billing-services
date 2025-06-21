@@ -6,9 +6,9 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from src.domain.models.payment import Payment, PaymentEvent
-from src.domain.services.payment_service import PaymentService
-from src.external.payment.abstract_payment_client import AbstractPaymentClient
+from billing_services.models.payment import Payment, PaymentEvent
+from billing_services.services.payment_service import PaymentService
+from billing_services.clients.payment.abstract_payment_client import AbstractPaymentClient
 
 
 class MockPaymentClient(AbstractPaymentClient):

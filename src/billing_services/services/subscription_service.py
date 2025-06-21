@@ -6,9 +6,9 @@ from datetime import datetime
 from typing import List, Optional
 from uuid import UUID
 
-from src.domain.models import Subscription
-from src.domain.services.payment_service import PaymentService
-from src.utils import logutils
+from billing_services.models import Subscription
+from billing_services.services.payment_service import PaymentService
+from billing_services.utils import logutils
 
 logger = logutils.get_logger(__name__)
 
@@ -26,13 +26,13 @@ class SubscriptionService:
             payment_service: Optional payment service for processing subscription payments.
         """
         # This is a placeholder. In a real implementation, this would likely
-        # use a database or external service to store and retrieve subscriptions.
+        # use a database or.clients.service to store and retrieve subscriptions.
         self.subscriptions = {}
         self.payment_service = payment_service
 
     async def create_subscription(
         self,
-        subject_id: UUID,
+        customer_id: UUID,
         plan_id: str,
         start_date: Optional[datetime] = None,
         end_date: Optional[datetime] = None,
@@ -46,7 +46,7 @@ class SubscriptionService:
         Create a new subscription.
 
         Args:
-            subject_id: The ID of the subject (user).
+            customer_id: The ID of the customer.
             plan_id: The ID of the plan.
             start_date: The start date of the subscription. Defaults to now.
             end_date: The end date of the subscription.
@@ -64,7 +64,7 @@ class SubscriptionService:
         subscription_id = uuid4()
         subscription = Subscription(
             id=subscription_id,
-            subject_id=subject_id,
+            customer_id=customer_id,
             plan_id=plan_id,
             status='active',
             start_date=start_date or datetime.now(),
@@ -82,7 +82,7 @@ class SubscriptionService:
                 payment_metadata = {
                     'subscription_id': str(subscription_id),
                     'plan_id': plan_id,
-                    'subject_id': str(subject_id),
+                    'customer_id': str(customer_id),
                     'type': 'subscription_creation',
                 }
 
@@ -120,20 +120,20 @@ class SubscriptionService:
         """
         return self.subscriptions.get(str(subscription_id))
 
-    async def get_subscriptions_for_subject(self, subject_id: UUID) -> List[Subscription]:
+    async def get_subscriptions_for_customer(self, customer_id: UUID) -> List[Subscription]:
         """
-        Get all subscriptions for a subject.
+        Get all subscriptions for a customer.
 
         Args:
-            subject_id: The ID of the subject.
+            customer_id: The ID of the customer.
 
         Returns:
-            A list of subscriptions for the subject.
+            A list of subscriptions for the customer.
         """
         return [
             subscription
             for subscription in self.subscriptions.values()
-            if subscription.subject_id == subject_id
+            if subscription.customer_id == customer_id
         ]
 
     async def update_subscription(

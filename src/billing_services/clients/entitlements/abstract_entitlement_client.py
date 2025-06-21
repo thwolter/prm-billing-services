@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import List, Optional
 
-from src.domain.models.entitlement import Entitlement
+from billing_services.models.entitlement import Entitlement
 
 
 class AbstractEntitlementClient(ABC):

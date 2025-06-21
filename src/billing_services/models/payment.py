@@ -21,7 +21,7 @@ class Payment(BaseModel):
 
     def to_dict(self) -> dict:
         """
-        Convert the payment to a dictionary format suitable for external APIs.
+        Convert the payment to a dictionary format suitable for.clients.APIs.
         """
         return {
             'id': str(self.id),
@@ -64,7 +64,7 @@ class PaymentEvent(BaseModel):
 
     def to_dict(self) -> dict:
         """
-        Convert the payment event to a dictionary format suitable for external APIs.
+        Convert the payment event to a dictionary format suitable for.clients.APIs.
         """
         return {
             'subscriptionId': str(self.subscription_id),

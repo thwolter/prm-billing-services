@@ -1,8 +1,8 @@
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List
 
-from src.domain.models.subject import Subject
-from src.domain.models.usage import TokenQuotaResponse, UsageEvent
+from billing_services.models.subject import Subject
+from billing_services.models.usage import TokenQuotaResponse, UsageEvent
 
 
 class AbstractMeteringClient(ABC):
@@ -78,5 +78,35 @@ class AbstractMeteringClient(ABC):
 
         Returns:
             True if the events were successfully ingested, False otherwise.
+        """
+        pass
+
+    @abstractmethod
+    def list_features(self) -> List[str]:
+        """
+        List all features available in the metering system.
+
+        Returns:
+            A list of feature keys.
+        """
+        pass
+
+    @abstractmethod
+    def create_feature(self, feature_key: str) -> None:
+        """
+        Create a new feature in the metering system.
+
+        Args:
+            feature_key: The key of the feature to create.
+        """
+        pass
+
+    @abstractmethod
+    def create_meter(self) -> bool:
+        """
+        Create a meter in the metering system with the configured settings.
+
+        Returns:
+            True if the meter was successfully created, False otherwise.
         """
         pass

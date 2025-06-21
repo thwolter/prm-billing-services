@@ -7,9 +7,9 @@ from datetime import datetime
 
 import pytest
 
-from src.core.config import settings
-from src.domain.services.payment_service import PaymentService
-from src.external.payment.openmeter_payment_client import OpenMeterPaymentClient
+from billing_services.core.config import settings
+from billing_services.services.payment_service import PaymentService
+from billing_services.clients.payment.openmeter_payment_client import OpenMeterPaymentClient
 
 
 @pytest.mark.integration

@@ -21,7 +21,7 @@ class Subscription(BaseModel):
 
     def to_dict(self) -> dict:
         """
-        Convert the subscription to a dictionary format suitable for external APIs.
+        Convert the subscription to a dictionary format suitable for.clients.APIs.
         """
         return {
             'id': str(self.id),

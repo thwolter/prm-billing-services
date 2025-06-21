@@ -1,7 +1,7 @@
-from src.domain.models.entitlement import Entitlement, EntitlementCreate
-from src.domain.models.subject import Subject
-from src.domain.models.subscription import Subscription
-from src.domain.models.usage import ConsumedTokensInfo, TokenQuotaResponse, UsageEvent
+from billing_services.models.entitlement import Entitlement, EntitlementCreate
+from billing_services.models.subject import Subject
+from billing_services.models.subscription import Subscription
+from billing_services.models.usage import ConsumedTokensInfo, TokenQuotaResponse, UsageEvent
 
 __all__ = [
     'Subject',
