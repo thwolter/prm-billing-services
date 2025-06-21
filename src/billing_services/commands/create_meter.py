@@ -22,7 +22,7 @@ logger = logutils.get_logger(__name__)
 def create_meter() -> bool:
     """
     Create a meter in OpenMeter with the configured settings.
-    
+
     Returns:
         True if the meter was successfully created, False otherwise.
     """
@@ -33,12 +33,12 @@ def create_meter() -> bool:
 
         # Create the meter
         result = metering_client.create_meter()
-        
+
         if result:
-            logger.info(f"Successfully created meter {settings.OPENMETER_METER_SLUG}")
+            logger.info(f"Successfully created meter {settings.OPENMETER.METER_SLUG}")
         else:
-            logger.error(f"Failed to create meter {settings.OPENMETER_METER_SLUG}")
-        
+            logger.error(f"Failed to create meter {settings.OPENMETER.METER_SLUG}")
+
         return result
     except Exception as e:
         logger.error(f"Error creating meter: {e}")
@@ -57,10 +57,10 @@ def main() -> None:
 
         # Create the meter
         success = create_meter()
-        
+
         if not success:
             sys.exit(1)
-            
+
         logger.info("Successfully created meter")
     except Exception as e:
         logger.error(f"Error creating meter: {e}")

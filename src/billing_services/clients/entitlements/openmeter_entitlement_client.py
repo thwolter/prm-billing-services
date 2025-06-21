@@ -37,16 +37,16 @@ class OpenMeterEntitlementClient(AbstractEntitlementClient):
         """
         headers = {
             'Accept': 'application/json',
-            'Authorization': f'Bearer {settings.OPENMETER_API_KEY}'
+            'Authorization': f'Bearer {settings.OPENMETER.API_KEY}'
         }
 
         sync_client = Client(
-            endpoint=settings.OPENMETER_API_URL,
+            endpoint=settings.OPENMETER.API_URL,
             headers=headers,
         )
 
         async_client = AsyncClient(
-            endpoint=settings.OPENMETER_API_URL,
+            endpoint=settings.OPENMETER.API_URL,
             headers=headers,
         )
 

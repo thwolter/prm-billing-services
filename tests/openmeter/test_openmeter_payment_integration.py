@@ -21,7 +21,7 @@ def test_openmeter_payment_client_initialization():
     the test is skipped. Otherwise, it initializes the OpenMeter payment client and
     verifies that it can be created without errors.
     """
-    api_key = settings.OPENMETER_API_KEY
+    api_key = settings.OPENMETER.API_KEY
     if not api_key:
         pytest.skip('OPENMETER_API_KEY not provided')
 
@@ -44,7 +44,7 @@ async def test_payment_service_process_payment():
     payment service, processes a payment, and verifies that the payment was processed
     successfully.
     """
-    api_key = settings.OPENMETER_API_KEY
+    api_key = settings.OPENMETER.API_KEY
     if not api_key:
         pytest.skip('OPENMETER_API_KEY not provided')
 
@@ -104,7 +104,7 @@ async def test_payment_service_refund_payment():
     payment service, processes a payment, refunds it, and verifies that the refund was
     processed successfully.
     """
-    api_key = settings.OPENMETER_API_KEY
+    api_key = settings.OPENMETER.API_KEY
     if not api_key:
         pytest.skip('OPENMETER_API_KEY not provided')
 
@@ -160,7 +160,7 @@ async def test_payment_service_partial_refund():
     payment service, processes a payment, partially refunds it, and verifies that the
     partial refund was processed successfully.
     """
-    api_key = settings.OPENMETER_API_KEY
+    api_key = settings.OPENMETER.API_KEY
     if not api_key:
         pytest.skip('OPENMETER_API_KEY not provided')
 
@@ -219,7 +219,7 @@ async def test_payment_service_update_status():
     payment service, processes a payment, updates its status, and verifies that the
     status was updated successfully.
     """
-    api_key = settings.OPENMETER_API_KEY
+    api_key = settings.OPENMETER.API_KEY
     if not api_key:
         pytest.skip('OPENMETER_API_KEY not provided')
 

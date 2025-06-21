@@ -43,16 +43,16 @@ class OpenMeterPaymentClient(AbstractPaymentClient):
         """
         headers = {
             'Accept': 'application/json',
-            'Authorization': f'Bearer {settings.OPENMETER_API_KEY}',
+            'Authorization': f'Bearer {settings.OPENMETER.API_KEY}',
         }
 
         sync_client = Client(
-            endpoint=settings.OPENMETER_API_URL,
+            endpoint=settings.OPENMETER.API_URL,
             headers=headers,
         )
 
         async_client = AsyncClient(
-            endpoint=settings.OPENMETER_API_URL,
+            endpoint=settings.OPENMETER.API_URL,
             headers=headers,
         )
 
@@ -77,7 +77,7 @@ class OpenMeterPaymentClient(AbstractPaymentClient):
                 attributes={
                     'id': str(payment_id),
                     'type': 'payment.processed',
-                    'source': settings.OPENMETER_SOURCE,
+                    'source': settings.OPENMETER.SOURCE,
                     'subject': str(payment_event.subscription_id),
                 },
                 data=payment_event.to_dict(),
@@ -155,7 +155,7 @@ class OpenMeterPaymentClient(AbstractPaymentClient):
             attributes={
                 'id': str(uuid4()),
                 'type': 'payment.refunded',
-                'source': settings.OPENMETER_SOURCE,
+                'source': settings.OPENMETER.SOURCE,
                 'subject': str(payment.subscription_id),
             },
             data={
@@ -200,7 +200,7 @@ class OpenMeterPaymentClient(AbstractPaymentClient):
             attributes={
                 'id': str(uuid4()),
                 'type': 'payment.status_updated',
-                'source': settings.OPENMETER_SOURCE,
+                'source': settings.OPENMETER.SOURCE,
                 'subject': str(payment.subscription_id),
             },
             data={

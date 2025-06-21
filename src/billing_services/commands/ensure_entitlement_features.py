@@ -79,7 +79,7 @@ def ensure_features(feature_keys: Optional[List[str]] = None) -> None:
 
     # If no feature keys are provided, use the one from settings
     if not feature_keys:
-        feature_keys = [settings.OPENMETER_FEATURE_KEY]
+        feature_keys = [settings.OPENMETER.FEATURE_KEY]
 
     # Filter out empty or None feature keys
     feature_keys = [key for key in feature_keys if key]

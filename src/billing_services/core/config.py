@@ -1,6 +1,32 @@
-from typing import Optional, List
-
+from typing import Optional, List, Dict, Any
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+class OpenMeterSettings(BaseSettings):
+    """OpenMeter-specific settings"""
+    model_config = SettingsConfigDict(env_file=['.env', '../.env'], env_ignore_empty=True, extra='ignore', env_prefix="OPENMETER_")
+
+    # API configuration
+    API_KEY: Optional[str] = None
+    API_URL: str = 'https://openmeter.cloud'
+    SOURCE: str = 'source'
+    TIMEOUT: float = 1.0
+
+    # Meter configuration
+    METER_SLUG: str = 'ai_tokens'
+    METER_DESCRIPTION: str = 'LLM tokens'
+    METER_EVENT_TYPE: str = 'tokens'
+    METER_AGGREGATION: str = 'SUM'
+    METER_VALUE_PROPERTY: str = 'tokens'
+    METER_GROUP_BY: List[str] = ['model', 'prompt']
+    METER_WINDOW_SIZE: str = 'DAY'
+
+    # Feature configuration
+    FEATURE_KEY: str = 'ai_tokens'
+
+    # Event configuration
+    TOKEN_EVENT_TYPE: str = 'tokens'
 
 
 class Settings(BaseSettings):
@@ -17,30 +43,11 @@ class Settings(BaseSettings):
     ENTITLEMENT_VENDOR: str = 'openmeter'
     PAYMENT_VENDOR: str = 'openmeter'
 
-    # OpenMeter API configuration
-    # These settings are used for connecting to the OpenMeter API
-    OPENMETER_API_KEY: Optional[str] = None
-    OPENMETER_API_URL: str = 'https://openmeter.cloud'
-    OPENMETER_SOURCE: str = 'source'
-    OPENMETER_TIMEOUT: float = 1.0
+    # Vendor-specific settings
+    OPENMETER: OpenMeterSettings = Field(default_factory=OpenMeterSettings)
 
-    # OpenMeter feature configuration
-    # These settings define the feature used for entitlements
-    OPENMETER_FEATURE_KEY: str = 'ai_tokens'  # The key used to identify the feature in OpenMeter
+    # In the future, add other vendor settings here:
+    # OTHER_VENDOR: OtherVendorSettings = Field(default_factory=OtherVendorSettings)
 
-    # OpenMeter event configuration
-    # These settings define how events are recorded in OpenMeter
-    OPENMETER_TOKEN_EVENT_TYPE: str = 'tokens'  # The event type for token usage events
-
-    # OpenMeter meter configuration
-    # These settings define how the meter is configured in OpenMeter
-
-    OPENMETER_METER_SLUG: str = 'ai_tokens'
-    OPENMETER_METER_DESCRIPTION: str = 'LLM tokens'
-    OPENMETER_METER_EVENT_TYPE: str = 'tokens'
-    OPENMETER_METER_AGGREGATION: str = 'SUM'
-    OPENMETER_METER_VALUE_PROPERTY: str = 'tokens'
-    OPENMETER_METER_GROUP_BY: List[str] = ['model', 'prompt']
-    OPENMETER_METER_WINDOW_SIZE: str = 'DAY'
 
 settings = Settings()

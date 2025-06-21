@@ -42,16 +42,16 @@ class OpenMeterMeteringClient(AbstractMeteringClient):
         """
         headers = {
             'Accept': 'application/json',
-            'Authorization': f'Bearer {settings.OPENMETER_API_KEY}'
+            'Authorization': f'Bearer {settings.OPENMETER.API_KEY}'
         }
 
         sync_client = Client(
-            endpoint=settings.OPENMETER_API_URL,
+            endpoint=settings.OPENMETER.API_URL,
             headers=headers,
         )
 
         async_client = AsyncClient(
-            endpoint=settings.OPENMETER_API_URL,
+            endpoint=settings.OPENMETER.API_URL,
             headers=headers,
         )
 
@@ -90,8 +90,8 @@ class OpenMeterMeteringClient(AbstractMeteringClient):
             event = CloudEvent(
                 attributes={
                     'id': str(uuid.uuid4()),
-                    'type': settings.OPENMETER_TOKEN_EVENT_TYPE,
-                    'source': settings.OPENMETER_SOURCE,
+                    'type': settings.OPENMETER.TOKEN_EVENT_TYPE,
+                    'source': settings.OPENMETER.SOURCE,
                     'subject': subject_id,
                 },
                 data=usage_event.to_dict(),
@@ -294,22 +294,22 @@ class OpenMeterMeteringClient(AbstractMeteringClient):
         try:
             # Create the meter configuration using the settings
             meter_config = {
-                "slug": settings.OPENMETER_METER_SLUG,
-                "description": settings.OPENMETER_METER_DESCRIPTION,
-                "eventType": settings.OPENMETER_METER_EVENT_TYPE,
-                "aggregation": settings.OPENMETER_METER_AGGREGATION,
-                "valueProperty": f'$.{settings.OPENMETER_METER_VALUE_PROPERTY}',
-                "groupBy": {key: f'$.{key}' for key in settings.OPENMETER_METER_GROUP_BY},
-                "windowSize": settings.OPENMETER_METER_WINDOW_SIZE
+                "slug": settings.OPENMETER.METER_SLUG,
+                "description": settings.OPENMETER.METER_DESCRIPTION,
+                "eventType": settings.OPENMETER.METER_EVENT_TYPE,
+                "aggregation": settings.OPENMETER.METER_AGGREGATION,
+                "valueProperty": f'$.{settings.OPENMETER.METER_VALUE_PROPERTY}',
+                "groupBy": {key: f'$.{key}' for key in settings.OPENMETER.METER_GROUP_BY},
+                "windowSize": settings.OPENMETER.METER_WINDOW_SIZE
             }
 
             # Call the create_meter method of the OpenMeter client
             self.sync_client.create_meter(meter_config)
-            logger.info(f'Meter {settings.OPENMETER_METER_SLUG} created successfully.')
+            logger.info(f'Meter {settings.OPENMETER.METER_SLUG} created successfully.')
             return True
         except HttpResponseError as e:
             if e.status_code == 200:
-                logger.info(f'Meter {settings.OPENMETER_METER_SLUG} has been created.')
+                logger.info(f'Meter {settings.OPENMETER.METER_SLUG} has been created.')
                 return True
         except Exception as e:
             logger.error(f'Error creating meter: {e}')

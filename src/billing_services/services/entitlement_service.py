@@ -77,7 +77,7 @@ class EntitlementService:
             logger.error(f'Subject {subject_id}, feature {feature_key}: {e}')
 
             # Check if this is the feature from settings
-            if feature_key == settings.OPENMETER_FEATURE_KEY:
+            if feature_key == settings.OPENMETER.FEATURE_KEY:
                 error_msg = (
                     f"Feature '{feature_key}' not found. "
                     f"Run 'python -m billing_services.commands.ensure_entitlement_features' "
@@ -121,7 +121,7 @@ class EntitlementService:
             logger.error(f'Subject {subject_id}, feature {feature_key}: {e}')
 
             # Check if this is the feature from settings
-            if feature_key == settings.OPENMETER_FEATURE_KEY:
+            if feature_key == settings.OPENMETER.FEATURE_KEY:
                 error_msg = (
                     f"Feature '{feature_key}' not found. "
                     f"Run 'python -m billing_services.commands.ensure_entitlement_features' "

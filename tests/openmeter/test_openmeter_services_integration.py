@@ -65,10 +65,10 @@ async def test_entitlement_service_set_get():
     # Create the entitlement service
     entitlement_service = EntitlementService(entitlement_client)
 
-    feature = settings.OPENMETER_FEATURE_KEY
+    feature = settings.OPENMETER.FEATURE_KEY
 
     # Set an entitlement
-    limit = EntitlementCreate(feature=settings.OPENMETER_FEATURE_KEY, max_limit=1000, period='MONTH')
+    limit = EntitlementCreate(feature=settings.OPENMETER.FEATURE_KEY, max_limit=1000, period='MONTH')
     await entitlement_service.set_entitlement(test_user_id, limit)
 
     # Get the entitlement status
@@ -120,7 +120,7 @@ async def test_metering_consume_tokens():
     # Create the metering service
     metering_service = MeteringService(metering_client)
 
-    feature = settings.OPENMETER_FEATURE_KEY
+    feature = settings.OPENMETER.FEATURE_KEY
 
     # Set an entitlement
     limit = EntitlementCreate(feature=feature, max_limit=1000, period='MONTH')

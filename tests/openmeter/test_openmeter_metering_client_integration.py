@@ -102,8 +102,8 @@ def test_openmeter_client_ingest_events():
         event = CloudEvent(
             attributes={
                 'id': str(uuid.uuid4()),
-                'type': settings.OPENMETER_TOKEN_EVENT_TYPE,
-                'source': settings.OPENMETER_SOURCE,
+                'type': settings.OPENMETER.TOKEN_EVENT_TYPE,
+                'source': settings.OPENMETER.SOURCE,
                 'subject': subject_id,
             },
             data={'tokens': 100, 'model': 'test-model', 'prompt': 'test-prompt'},
@@ -329,7 +329,6 @@ def test_openmeter_client_create_feature():
     """
 
     try:
-        # Initialize the client
         client = OpenMeterMeteringClient.from_default()
 
         # Create a unique feature key
@@ -362,7 +361,7 @@ def test_openmeter_client_create_meter():
     client = OpenMeterMeteringClient.from_default()
 
     try:
-        client.sync_client.delete_meter(settings.OPENMETER_METER_SLUG)
+        client.sync_client.delete_meter(settings.OPENMETER.METER_SLUG)
     except Exception as exc:
         pytest.fail(f'OpenMeter client delete_meter test failed: {exc}')
 
